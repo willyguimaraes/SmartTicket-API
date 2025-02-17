@@ -1,39 +1,80 @@
-// src/models/reservation.ts
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne } from 'typeorm';
-import { User } from './user';
-import { Event } from './event';
-import { Ticket } from './ticket';
+import { Model, DataTypes, Optional } from "sequelize";
+import sequelize from "../config/database";
+import User from "./user";
+import Event from "./event";
+import Ticket from "./ticket";
 
-/**
- * Representa uma reserva realizada por um usuário para um evento.
- */
-@Entity({ name: 'reservations' })
-export class Reservation {
-  /** Identificador único da reserva */
-  @PrimaryGeneratedColumn()
-  id!: number;
-
-  /** Quantidade de ingressos reservados */
-  @Column({ type: 'int' })
-  quantity!: number;
-
-  /** Data e hora em que a reserva foi efetuada */
-  @CreateDateColumn({ type: 'timestamp' })
-  reservedAt!: Date;
-
-  /** Data da última atualização da reserva */
-  @UpdateDateColumn({ type: 'timestamp' })
-  updatedAt!: Date;
-
-  /** Usuário que realizou a reserva */
-  @ManyToOne(() => User, (user) => user.reservations)
-  user!: User;
-
-  /** Evento para o qual a reserva foi feita */
-  @ManyToOne(() => Event, (event) => event.reservations)
-  event!: Event;
-
-  /** Tipo de ingresso reservado */
-  @ManyToOne(() => Ticket)
-  ticket!: Ticket;
+export interface ReservationAttributes {
+  id: number;
+  quantity: number;
+  userId: number;
+  eventId: number;
+  ticketId: number;
+  createdAt?: Date; // Usado como data de reserva (reservedAt)
+  updatedAt?: Date;
 }
+
+export interface ReservationCreationAttributes extends Optional<ReservationAttributes, "id"> {}
+
+export class Reservation extends Model<ReservationAttributes, ReservationCreationAttributes> implements ReservationAttributes {
+  public id!: number;
+  public quantity!: number;
+  public userId!: number;
+  public eventId!: number;
+  public ticketId!: number;
+
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
+}
+
+Reservation.init(
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    quantity: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: User,
+        key: "id",
+      },
+    },
+    eventId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: Event,
+        key: "id",
+      },
+    },
+    ticketId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: Ticket,
+        key: "id",
+      },
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+  },
+  {
+    tableName: "reservations",
+    sequelize,
+  }
+);
+
+export default Reservation;

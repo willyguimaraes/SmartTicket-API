@@ -1,61 +1,73 @@
-// src/models/user.ts
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
-import { Event } from './event';
-import { Reservation } from './reservation';
+import { Model, DataTypes, Optional } from "sequelize";
+import sequelize from "../config/database"; // Certifique-se de que este arquivo exporte a instância do Sequelize
 
-
-
-/**
- * Enumeração dos papéis disponíveis para um usuário.
- */
 export enum UserRole {
-  ADMIN = 'admin',
-  ORGANIZER = 'organizer',
-  CLIENT = 'client',
+  ADMIN = "admin",
+  ORGANIZER = "organizer",
+  CLIENT = "client",
 }
 
-/**
- * Representa um usuário do sistema.
- */
-@Entity({ name: 'users' })
-export class User {
-  /** Identificador único do usuário */
-  @PrimaryGeneratedColumn()
-  id!: number;
-
-  /** Nome completo do usuário */
-  @Column({ type: 'varchar', length: 100 })
-  name!: string;
-
-  /** Endereço de e-mail do usuário (único) */
-  @Column({ type: 'varchar', length: 100, unique: true })
-  email!: string;
-
-  /** Senha criptografada do usuário */
-  @Column({ type: 'varchar', length: 255 })
-  password!: string;
-
-  /** Papel do usuário no sistema */
-  @Column({
-    type: 'enum',
-    enum: UserRole,
-    default: UserRole.CLIENT,
-  })
-  role!: UserRole;
-
-  /** Data de criação do registro */
-  @CreateDateColumn({ type: 'timestamp' })
-  createdAt!: Date;
-
-  /** Data da última atualização do registro */
-  @UpdateDateColumn({ type: 'timestamp' })
-  updatedAt!: Date;
-
-  /** Eventos organizados pelo usuário */
-  @OneToMany(() => Event, (event) => event.organizer)
-  events!: Event[];
-
-  /** Reservas efetuadas pelo usuário */
-  @OneToMany(() => Reservation, (reservation) => reservation.user)
-  reservations!: Reservation[];
+export interface UserAttributes {
+  id: number;
+  name: string;
+  email: string;
+  password: string;
+  role: UserRole;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
+
+export interface UserCreationAttributes extends Optional<UserAttributes, "id"> {}
+
+export class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
+  public id!: number;
+  public name!: string;
+  public email!: string;
+  public password!: string;
+  public role!: UserRole;
+
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
+}
+
+User.init(
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    name: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+    },
+    email: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+      unique: true,
+    },
+    password: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+    },
+    role: {
+      type: DataTypes.ENUM(...Object.values(UserRole)),
+      allowNull: false,
+      defaultValue: UserRole.CLIENT,
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+  },
+  {
+    tableName: "users",
+    sequelize,
+  }
+);
+
+export default User;

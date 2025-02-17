@@ -1,60 +1,93 @@
-// src/models/event.ts
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany } from 'typeorm';
-import { User } from './user';
-import { Location } from './location';
-import { Ticket } from './ticket';
-import { Reservation } from './reservation';
+import { Model, DataTypes, Optional } from "sequelize";
+import sequelize from "../config/database";
+import User from "./user";
+import Location from "../models/location";
 
-/**
- * Representa um evento no sistema.
- */
-@Entity({ name: 'events' })
-export class Event {
-  /** Identificador único do evento */
-  @PrimaryGeneratedColumn()
-  id!: number;
-
-  /** Título do evento */
-  @Column({ type: 'varchar', length: 150 })
-  title!: string;
-
-  /** Descrição detalhada do evento */
-  @Column({ type: 'text' })
-  description!: string;
-
-  /** Data de realização do evento */
-  @Column({ type: 'date' })
-  date!: Date;
-
-  /** Horário do evento */
-  @Column({ type: 'time' })
-  time!: string;
-
-  /** Categoria do evento */
-  @Column({ type: 'varchar', length: 50 })
-  category!: string;
-
-  /** Usuário que organizou o evento */
-  @ManyToOne(() => User, (user) => user.events)
-  organizer!: User;
-
-  /** Local onde o evento será realizado */
-  @ManyToOne(() => Location, (location) => location.events)
-  location!: Location;
-
-  /** Ingressos disponíveis para o evento */
-  @OneToMany(() => Ticket, (ticket) => ticket.event)
-  tickets!: Ticket[];
-
-  /** Reservas efetuadas para o evento */
-  @OneToMany(() => Reservation, (reservation) => reservation.event)
-  reservations!: Reservation[];
-
-  /** Data de criação do registro do evento */
-  @CreateDateColumn({ type: 'timestamp' })
-  createdAt!: Date;
-
-  /** Data da última atualização do registro do evento */
-  @UpdateDateColumn({ type: 'timestamp' })
-  updatedAt!: Date;
+export interface EventAttributes {
+  id: number;
+  title: string;
+  description: string;
+  date: Date;
+  time: string;
+  category: string;
+  organizerId: number;
+  locationId: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
+
+export interface EventCreationAttributes extends Optional<EventAttributes, "id"> {}
+
+export class Event extends Model<EventAttributes, EventCreationAttributes> implements EventAttributes {
+  public id!: number;
+  public title!: string;
+  public description!: string;
+  public date!: Date;
+  public time!: string;
+  public category!: string;
+  public organizerId!: number;
+  public locationId!: number;
+
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
+}
+
+Event.init(
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    title: {
+      type: DataTypes.STRING(150),
+      allowNull: false,
+    },
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+    date: {
+      type: DataTypes.DATEONLY,
+      allowNull: false,
+    },
+    time: {
+      type: DataTypes.TIME,
+      allowNull: false,
+    },
+    category: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
+    organizerId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: User,
+        key: "id",
+      },
+    },
+    locationId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: Location,
+        key: "id",
+      },
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+  },
+  {
+    tableName: "events",
+    sequelize,
+  }
+);
+
+export default Event;

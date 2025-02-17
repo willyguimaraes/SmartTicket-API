@@ -1,37 +1,59 @@
-// src/models/location.ts
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
-import { Event } from './event';
+import { Model, DataTypes, Optional } from "sequelize";
+import sequelize from "../config/database";
 
-/**
- * Representa um local onde os eventos são realizados.
- */
-@Entity({ name: 'locations' })
-export class Location {
-  /** Identificador único do local */
-  @PrimaryGeneratedColumn()
-  id!: number;
-
-  /** Nome do local */
-  @Column({ type: 'varchar', length: 100 })
-  name!: string;
-
-  /** Endereço completo do local */
-  @Column({ type: 'varchar', length: 200 })
-  address!: string;
-
-  /** Capacidade máxima do local */
-  @Column({ type: 'int' })
-  capacity!: number;
-
-  /** Eventos agendados para este local */
-  @OneToMany(() => Event, (event) => event.location)
-  events!: Event[];
-
-  /** Data de criação do local */
-  @CreateDateColumn({ type: 'timestamp' })
-  createdAt!: Date;
-
-  /** Data da última atualização do local */
-  @UpdateDateColumn({ type: 'timestamp' })
-  updatedAt!: Date;
+export interface LocationAttributes {
+  id: number;
+  name: string;
+  address: string;
+  capacity: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
+
+export interface LocationCreationAttributes extends Optional<LocationAttributes, "id"> {}
+
+export class Location extends Model<LocationAttributes, LocationCreationAttributes> implements LocationAttributes {
+  public id!: number;
+  public name!: string;
+  public address!: string;
+  public capacity!: number;
+
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
+}
+
+Location.init(
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    name: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+    },
+    address: {
+      type: DataTypes.STRING(200),
+      allowNull: false,
+    },
+    capacity: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+  },
+  {
+    tableName: "locations",
+    sequelize,
+  }
+);
+
+export default Location;

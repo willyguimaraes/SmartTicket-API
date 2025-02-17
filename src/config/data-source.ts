@@ -11,9 +11,9 @@ export const AppDataSource = new DataSource({
   type: 'postgres', // ou outro banco de dados de sua escolha
   host: 'localhost',
   port: 5432,
-  username: 'seu_usuario',
-  password: 'sua_senha',
-  database: 'nome_do_banco',
+  username: 'willygmb',
+  password: 'willy1234',
+  database: 'smartdata',
   synchronize: true,
   logging: false,
   entities: [User, Event, Ticket, Location, Reservation],
