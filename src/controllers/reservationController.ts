@@ -1,5 +1,4 @@
-// src/controllers/reservationController.ts
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { AppDataSource } from '../config/data-source';
 import { Reservation } from '../models/reservation';
 import { Ticket } from '../models/ticket';
@@ -10,7 +9,7 @@ import { User } from '../models/user';
  * Cria uma nova reserva (compra de ingresso).
  * Verifica a disponibilidade e atualiza o estoque em transação.
  */
-export const createReservation = async (req: Request, res: Response): Promise<Response> => {
+export const createReservation = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { userId, eventId, ticketId, quantity } = req.body;
     const ticketRepository = AppDataSource.getRepository(Ticket);
@@ -19,10 +18,12 @@ export const createReservation = async (req: Request, res: Response): Promise<Re
       relations: ['event'],
     });
     if (!ticket) {
-      return res.status(404).json({ message: 'Ingresso não encontrado.' });
+      res.status(404).json({ message: 'Ingresso não encontrado.' });
+      return;
     }
     if (ticket.quantityAvailable < quantity) {
-      return res.status(400).json({ message: 'Quantidade de ingressos indisponível.' });
+      res.status(400).json({ message: 'Quantidade de ingressos indisponível.' });
+      return;
     }
 
     await AppDataSource.manager.transaction(async (transactionalEntityManager) => {
@@ -38,49 +39,49 @@ export const createReservation = async (req: Request, res: Response): Promise<Re
       const event = await eventRepository.findOneBy({ id: eventId });
       if (!event) throw new Error('Evento não encontrado.');
 
+      // Cria a reserva utilizando as chaves estrangeiras
       const newReservation = reservationRepository.create({
         quantity,
-        user,
-        event,
-        ticket,
+        userId,  
+        eventId, 
+        ticketId,
       });
       await reservationRepository.save(newReservation);
       res.status(201).json(newReservation);
     });
-    return res;
   } catch (error) {
     console.error('Erro ao criar reserva:', error);
-    return res.status(500).json({ message: 'Erro interno do servidor.' });
+    next(error);
   }
 };
 
 /**
  * Lista as reservas. Se for informado um userId na query, filtra pelas reservas do usuário.
  */
-export const getReservations = async (req: Request, res: Response): Promise<Response> => {
+export const getReservations = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { userId } = req.query;
     const reservationRepository = AppDataSource.getRepository(Reservation);
     let reservations;
     if (userId) {
       reservations = await reservationRepository.find({
-        where: { user: { id: Number(userId) } },
+        where: { userId: Number(userId) },
         relations: ['user', 'event', 'ticket'],
       });
     } else {
       reservations = await reservationRepository.find({ relations: ['user', 'event', 'ticket'] });
     }
-    return res.status(200).json(reservations);
+    res.status(200).json(reservations);
   } catch (error) {
     console.error('Erro ao buscar reservas:', error);
-    return res.status(500).json({ message: 'Erro interno do servidor.' });
+    next(error);
   }
 };
 
 /**
  * Retorna uma reserva pelo ID.
  */
-export const getReservationById = async (req: Request, res: Response): Promise<Response> => {
+export const getReservationById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id } = req.params;
     const reservationRepository = AppDataSource.getRepository(Reservation);
@@ -89,19 +90,20 @@ export const getReservationById = async (req: Request, res: Response): Promise<R
       relations: ['user', 'event', 'ticket'],
     });
     if (!reservation) {
-      return res.status(404).json({ message: 'Reserva não encontrada.' });
+      res.status(404).json({ message: 'Reserva não encontrada.' });
+      return;
     }
-    return res.status(200).json(reservation);
+    res.status(200).json(reservation);
   } catch (error) {
     console.error('Erro ao buscar reserva:', error);
-    return res.status(500).json({ message: 'Erro interno do servidor.' });
+    next(error);
   }
 };
 
 /**
  * Cancela uma reserva, revertendo a quantidade disponível do ingresso.
  */
-export const cancelReservation = async (req: Request, res: Response): Promise<Response> => {
+export const cancelReservation = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id } = req.params;
     const reservationRepository = AppDataSource.getRepository(Reservation);
@@ -110,18 +112,20 @@ export const cancelReservation = async (req: Request, res: Response): Promise<Re
       relations: ['ticket'],
     });
     if (!reservation) {
-      return res.status(404).json({ message: 'Reserva não encontrada.' });
+      res.status(404).json({ message: 'Reserva não encontrada.' });
+      return;
     }
 
     await AppDataSource.manager.transaction(async (transactionalEntityManager) => {
       const ticket = reservation.ticket;
+      if (!ticket) throw new Error('Ticket não encontrado na reserva.');
       ticket.quantityAvailable += reservation.quantity;
       await transactionalEntityManager.save(ticket);
       await transactionalEntityManager.remove(reservation);
     });
-    return res.status(200).json({ message: 'Reserva cancelada com sucesso.' });
+    res.status(200).json({ message: 'Reserva cancelada com sucesso.' });
   } catch (error) {
     console.error('Erro ao cancelar reserva:', error);
-    return res.status(500).json({ message: 'Erro interno do servidor.' });
+    next(error);
   }
 };

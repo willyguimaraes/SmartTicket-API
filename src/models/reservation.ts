@@ -16,12 +16,18 @@ export interface ReservationAttributes {
 
 export interface ReservationCreationAttributes extends Optional<ReservationAttributes, "id"> {}
 
-export class Reservation extends Model<ReservationAttributes, ReservationCreationAttributes> implements ReservationAttributes {
+export class Reservation extends Model<ReservationAttributes, ReservationCreationAttributes>
+  implements ReservationAttributes {
   public id!: number;
   public quantity!: number;
   public userId!: number;
   public eventId!: number;
   public ticketId!: number;
+
+  // Propriedades associadas opcionais (para que o TypeScript reconheça as relações)
+  public ticket?: Ticket;
+  public user?: User;
+  public event?: Event;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;

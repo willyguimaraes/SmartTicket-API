@@ -106,8 +106,11 @@ export class ReservationService {
     if (!reservation) {
       throw new Error('Reserva não encontrada.');
     }
+    const ticket = reservation.ticket;
+    if (!ticket) {
+      throw new Error('Ingresso associado não encontrado.');
+    }
     await AppDataSource.manager.transaction(async (transactionalEntityManager) => {
-      const ticket = reservation.ticket;
       ticket.quantityAvailable += reservation.quantity;
       await transactionalEntityManager.save(ticket);
       await transactionalEntityManager.remove(reservation);

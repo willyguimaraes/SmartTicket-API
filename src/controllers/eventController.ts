@@ -1,5 +1,4 @@
-// src/controllers/eventController.ts
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { AppDataSource } from '../config/data-source';
 import { Event } from '../models/event';
 import { User } from '../models/user';
@@ -9,7 +8,7 @@ import { Like } from 'typeorm';
 /**
  * Cria um novo evento.
  */
-export const createEvent = async (req: Request, res: Response): Promise<Response> => {
+export const createEvent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { title, description, date, time, category, organizerId, locationId } = req.body;
     const eventRepository = AppDataSource.getRepository(Event);
@@ -18,11 +17,13 @@ export const createEvent = async (req: Request, res: Response): Promise<Response
 
     const organizer = await userRepository.findOneBy({ id: organizerId });
     if (!organizer) {
-      return res.status(404).json({ message: 'Organizador não encontrado.' });
+      res.status(404).json({ message: 'Organizador não encontrado.' });
+      return;
     }
     const location = await locationRepository.findOneBy({ id: locationId });
     if (!location) {
-      return res.status(404).json({ message: 'Local não encontrado.' });
+      res.status(404).json({ message: 'Local não encontrado.' });
+      return;
     }
 
     const newEvent = eventRepository.create({
@@ -31,21 +32,21 @@ export const createEvent = async (req: Request, res: Response): Promise<Response
       date,
       time,
       category,
-      organizer,
-      location,
+      organizerId,
+      locationId,
     });
     await eventRepository.save(newEvent);
-    return res.status(201).json(newEvent);
+    res.status(201).json(newEvent);
   } catch (error) {
     console.error('Erro ao criar evento:', error);
-    return res.status(500).json({ message: 'Erro interno do servidor.' });
+    next(error);
   }
 };
 
 /**
  * Retorna a lista de eventos com filtros (por data, local e categoria).
  */
-export const getEvents = async (req: Request, res: Response): Promise<Response> => {
+export const getEvents = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { date, location, category } = req.query;
     const eventRepository = AppDataSource.getRepository(Event);
@@ -58,17 +59,17 @@ export const getEvents = async (req: Request, res: Response): Promise<Response> 
       where: filters,
       relations: ['organizer', 'location', 'tickets'],
     });
-    return res.status(200).json(events);
+    res.status(200).json(events);
   } catch (error) {
     console.error('Erro ao buscar eventos:', error);
-    return res.status(500).json({ message: 'Erro interno do servidor.' });
+    next(error);
   }
 };
 
 /**
  * Retorna um evento pelo ID.
  */
-export const getEventById = async (req: Request, res: Response): Promise<Response> => {
+export const getEventById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id } = req.params;
     const eventRepository = AppDataSource.getRepository(Event);
@@ -77,25 +78,27 @@ export const getEventById = async (req: Request, res: Response): Promise<Respons
       relations: ['organizer', 'location', 'tickets'],
     });
     if (!event) {
-      return res.status(404).json({ message: 'Evento não encontrado.' });
+      res.status(404).json({ message: 'Evento não encontrado.' });
+      return;
     }
-    return res.status(200).json(event);
+    res.status(200).json(event);
   } catch (error) {
     console.error('Erro ao buscar evento:', error);
-    return res.status(500).json({ message: 'Erro interno do servidor.' });
+    next(error);
   }
 };
 
 /**
  * Atualiza os dados de um evento.
  */
-export const updateEvent = async (req: Request, res: Response): Promise<Response> => {
+export const updateEvent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id } = req.params;
     const eventRepository = AppDataSource.getRepository(Event);
     let event = await eventRepository.findOneBy({ id: Number(id) });
     if (!event) {
-      return res.status(404).json({ message: 'Evento não encontrado.' });
+      res.status(404).json({ message: 'Evento não encontrado.' });
+      return;
     }
     event.title = req.body.title || event.title;
     event.description = req.body.description || event.description;
@@ -103,28 +106,29 @@ export const updateEvent = async (req: Request, res: Response): Promise<Response
     event.time = req.body.time || event.time;
     event.category = req.body.category || event.category;
     event = await eventRepository.save(event);
-    return res.status(200).json(event);
+    res.status(200).json(event);
   } catch (error) {
     console.error('Erro ao atualizar evento:', error);
-    return res.status(500).json({ message: 'Erro interno do servidor.' });
+    next(error);
   }
 };
 
 /**
  * Remove um evento.
  */
-export const deleteEvent = async (req: Request, res: Response): Promise<Response> => {
+export const deleteEvent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id } = req.params;
     const eventRepository = AppDataSource.getRepository(Event);
     const event = await eventRepository.findOneBy({ id: Number(id) });
     if (!event) {
-      return res.status(404).json({ message: 'Evento não encontrado.' });
+      res.status(404).json({ message: 'Evento não encontrado.' });
+      return;
     }
     await eventRepository.remove(event);
-    return res.status(200).json({ message: 'Evento removido com sucesso.' });
+    res.status(200).json({ message: 'Evento removido com sucesso.' });
   } catch (error) {
     console.error('Erro ao remover evento:', error);
-    return res.status(500).json({ message: 'Erro interno do servidor.' });
+    next(error);
   }
 };

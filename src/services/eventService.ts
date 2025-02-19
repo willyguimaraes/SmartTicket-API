@@ -44,8 +44,8 @@ export class EventService {
       date,
       time,
       category,
-      organizer,
-      location,
+      organizerId,
+      locationId,
     });
     await eventRepository.save(newEvent);
     return newEvent;

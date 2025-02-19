@@ -29,7 +29,7 @@ export class TicketService {
       type,
       price,
       quantityAvailable,
-      event,
+      eventId,
     });
     await ticketRepository.save(newTicket);
     return newTicket;

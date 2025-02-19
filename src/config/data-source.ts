@@ -8,7 +8,7 @@ import { Location } from '../models/location';
 import { Reservation } from '../models/reservation';
 
 export const AppDataSource = new DataSource({
-  type: 'postgres', // ou outro banco de dados de sua escolha
+  type: 'postgres',
   host: 'localhost',
   port: 5432,
   username: 'willygmb',

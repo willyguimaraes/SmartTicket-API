@@ -15,6 +15,7 @@ export interface TicketAttributes {
 export interface TicketCreationAttributes extends Optional<TicketAttributes, "id"> {}
 
 export class Ticket extends Model<TicketAttributes, TicketCreationAttributes> implements TicketAttributes {
+  
   public id!: number;
   public type!: string;
   public price!: number;
