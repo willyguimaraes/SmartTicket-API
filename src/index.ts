@@ -87,3 +87,6 @@ sequelize
   .catch((error) => {
     console.error('Erro ao sincronizar banco de dados:', error);
   });
+
+export default app;
+
