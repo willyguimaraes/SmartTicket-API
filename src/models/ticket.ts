@@ -1,71 +1,55 @@
-import { Model, DataTypes, Optional } from "sequelize";
-import sequelize from "../config/database";
-import Event from "./event";
+// src/models/ticket.ts
 
-export interface TicketAttributes {
-  id: number;
-  type: string;
-  price: number;
-  quantityAvailable: number;
-  eventId: number;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
+import { Model, DataTypes } from 'sequelize';
+import sequelize from '../config/database';
+import Event from './event';  // Importando o modelo Event
 
-export interface TicketCreationAttributes extends Optional<TicketAttributes, "id"> {}
-
-export class Ticket extends Model<TicketAttributes, TicketCreationAttributes> implements TicketAttributes {
-  
+class Ticket extends Model {
   public id!: number;
+  public eventId!: number;
   public type!: string;
   public price!: number;
   public quantityAvailable!: number;
-  public eventId!: number;
-
-  public readonly createdAt!: Date;
-  public readonly updatedAt!: Date;
 }
 
 Ticket.init(
   {
     id: {
       type: DataTypes.INTEGER,
-      autoIncrement: true,
       primaryKey: true,
-    },
-    type: {
-      type: DataTypes.STRING(50),
-      allowNull: false,
-    },
-    price: {
-      type: DataTypes.DECIMAL(10, 2),
-      allowNull: false,
-    },
-    quantityAvailable: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
+      autoIncrement: true,
     },
     eventId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
         model: Event,
-        key: "id",
+        key: 'id',
       },
     },
-    createdAt: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
+    type: {
+      type: DataTypes.STRING,
+      allowNull: false,
     },
-    updatedAt: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
+    price: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+    },
+    quantityAvailable: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
     },
   },
   {
-    tableName: "tickets",
     sequelize,
+    modelName: 'Ticket',
   }
 );
+
+// Definindo a associação
+Ticket.belongsTo(Event, {
+  foreignKey: 'eventId',
+  onDelete: 'CASCADE',  // Se o evento for deletado, todos os ingressos associados também serão deletados
+});
 
 export default Ticket;

@@ -7,7 +7,7 @@ export interface EventAttributes {
   id: number;
   title: string;
   description: string;
-  date: Date;
+  date: string;
   time: string;
   category: string;
   organizerId: number;
@@ -22,7 +22,7 @@ export class Event extends Model<EventAttributes, EventCreationAttributes> imple
   public id!: number;
   public title!: string;
   public description!: string;
-  public date!: Date;
+  public date!: string;
   public time!: string;
   public category!: string;
   public organizerId!: number;
@@ -48,7 +48,7 @@ Event.init(
       allowNull: false,
     },
     date: {
-      type: DataTypes.DATEONLY,
+      type: DataTypes.STRING(150),
       allowNull: false,
     },
     time: {

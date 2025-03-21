@@ -45,6 +45,7 @@
     "jest": "^29.7.0",
     "mocha": "^11.1.0",
     "nodemon": "^3.1.9",
+    "sequelize-typescript": "^2.1.6",
     "supertest": "^7.0.0",
     "ts-jest": "^29.2.6",
     "ts-node": "^10.9.2",
