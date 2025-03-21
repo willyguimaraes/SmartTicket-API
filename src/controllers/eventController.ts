@@ -1,9 +1,10 @@
-import { Request, Response, NextFunction } from 'express';
-import { AppDataSource } from '../config/data-source';
-import { Event } from '../models/event';
-import { User } from '../models/user';
-import { Location } from '../models/location';
-import { Like } from 'typeorm';
+// src/controllers/eventController.ts
+import { Request, Response, NextFunction } from "express";
+import { Op } from "sequelize";
+import Event from "../models/event";
+import User from "../models/user";
+import Location from "../models/location";
+import Ticket from "../models/ticket";
 
 /**
  * Cria um novo evento.
@@ -11,22 +12,19 @@ import { Like } from 'typeorm';
 export const createEvent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { title, description, date, time, category, organizerId, locationId } = req.body;
-    const eventRepository = AppDataSource.getRepository(Event);
-    const userRepository = AppDataSource.getRepository(User);
-    const locationRepository = AppDataSource.getRepository(Location);
 
-    const organizer = await userRepository.findOneBy({ id: organizerId });
+    const organizer = await User.findByPk(organizerId);
     if (!organizer) {
-      res.status(404).json({ message: 'Organizador não encontrado.' });
+      res.status(404).json({ message: "Organizador não encontrado." });
       return;
     }
-    const location = await locationRepository.findOneBy({ id: locationId });
+    const location = await Location.findByPk(locationId);
     if (!location) {
-      res.status(404).json({ message: 'Local não encontrado.' });
+      res.status(404).json({ message: "Local não encontrado." });
       return;
     }
 
-    const newEvent = eventRepository.create({
+    const newEvent = await Event.create({
       title,
       description,
       date,
@@ -35,10 +33,9 @@ export const createEvent = async (req: Request, res: Response, next: NextFunctio
       organizerId,
       locationId,
     });
-    await eventRepository.save(newEvent);
     res.status(201).json(newEvent);
   } catch (error) {
-    console.error('Erro ao criar evento:', error);
+    console.error("Erro ao criar evento:", error);
     next(error);
   }
 };
@@ -49,19 +46,30 @@ export const createEvent = async (req: Request, res: Response, next: NextFunctio
 export const getEvents = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { date, location, category } = req.query;
-    const eventRepository = AppDataSource.getRepository(Event);
     const filters: any = {};
-    if (date) filters.date = date;
-    if (category) filters.category = Like(`%${category}%`);
-    if (location) filters.location = location;
 
-    const events = await eventRepository.find({
+    if (date) {
+      filters.date = date;
+    }
+    if (category) {
+      filters.category = { [Op.like]: `%${category}%` };
+    }
+    if (location) {
+      // Se a coluna for o ID do local, usamos "locationId"
+      filters.locationId = location;
+    }
+
+    const events = await Event.findAll({
       where: filters,
-      relations: ['organizer', 'location', 'tickets'],
+      include: [
+        { model: User, as: "organizer" },
+        { model: Location, as: "location" },
+        { model: Ticket, as: "tickets" },
+      ],
     });
     res.status(200).json(events);
   } catch (error) {
-    console.error('Erro ao buscar eventos:', error);
+    console.error("Erro ao buscar eventos:", error);
     next(error);
   }
 };
@@ -72,18 +80,20 @@ export const getEvents = async (req: Request, res: Response, next: NextFunction)
 export const getEventById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id } = req.params;
-    const eventRepository = AppDataSource.getRepository(Event);
-    const event = await eventRepository.findOne({
-      where: { id: Number(id) },
-      relations: ['organizer', 'location', 'tickets'],
+    const event = await Event.findByPk(Number(id), {
+      include: [
+        { model: User, as: "organizer" },
+        { model: Location, as: "location" },
+        { model: Ticket, as: "tickets" },
+      ],
     });
     if (!event) {
-      res.status(404).json({ message: 'Evento não encontrado.' });
+      res.status(404).json({ message: "Evento não encontrado." });
       return;
     }
     res.status(200).json(event);
   } catch (error) {
-    console.error('Erro ao buscar evento:', error);
+    console.error("Erro ao buscar evento:", error);
     next(error);
   }
 };
@@ -94,10 +104,9 @@ export const getEventById = async (req: Request, res: Response, next: NextFuncti
 export const updateEvent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id } = req.params;
-    const eventRepository = AppDataSource.getRepository(Event);
-    let event = await eventRepository.findOneBy({ id: Number(id) });
+    const event = await Event.findByPk(Number(id));
     if (!event) {
-      res.status(404).json({ message: 'Evento não encontrado.' });
+      res.status(404).json({ message: "Evento não encontrado." });
       return;
     }
     event.title = req.body.title || event.title;
@@ -105,10 +114,10 @@ export const updateEvent = async (req: Request, res: Response, next: NextFunctio
     event.date = req.body.date || event.date;
     event.time = req.body.time || event.time;
     event.category = req.body.category || event.category;
-    event = await eventRepository.save(event);
+    await event.save();
     res.status(200).json(event);
   } catch (error) {
-    console.error('Erro ao atualizar evento:', error);
+    console.error("Erro ao atualizar evento:", error);
     next(error);
   }
 };
@@ -119,16 +128,15 @@ export const updateEvent = async (req: Request, res: Response, next: NextFunctio
 export const deleteEvent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id } = req.params;
-    const eventRepository = AppDataSource.getRepository(Event);
-    const event = await eventRepository.findOneBy({ id: Number(id) });
+    const event = await Event.findByPk(Number(id));
     if (!event) {
-      res.status(404).json({ message: 'Evento não encontrado.' });
+      res.status(404).json({ message: "Evento não encontrado." });
       return;
     }
-    await eventRepository.remove(event);
-    res.status(200).json({ message: 'Evento removido com sucesso.' });
+    await event.destroy();
+    res.status(200).json({ message: "Evento removido com sucesso." });
   } catch (error) {
-    console.error('Erro ao remover evento:', error);
+    console.error("Erro ao remover evento:", error);
     next(error);
   }
 };

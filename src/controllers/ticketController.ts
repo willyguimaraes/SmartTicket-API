@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
-import { AppDataSource } from '../config/data-source';
-import { Ticket } from '../models/ticket';
-import { Event } from '../models/event';
+// src/controllers/ticketController.ts
+import { Request, Response, NextFunction } from "express";
+import Ticket from "../models/ticket";
+import Event from "../models/event";
 
 /**
  * Cria um novo ingresso vinculado a um evento.
@@ -9,25 +9,15 @@ import { Event } from '../models/event';
 export const createTicket = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { type, price, quantityAvailable, eventId } = req.body;
-    const ticketRepository = AppDataSource.getRepository(Ticket);
-    const eventRepository = AppDataSource.getRepository(Event);
-
-    const event = await eventRepository.findOneBy({ id: eventId });
+    const event = await Event.findByPk(eventId);
     if (!event) {
-      res.status(404).json({ message: 'Evento não encontrado.' });
+      res.status(404).json({ message: "Evento não encontrado." });
       return;
     }
-
-    const newTicket = ticketRepository.create({
-      type,
-      price,
-      quantityAvailable,
-      eventId,
-    });
-    await ticketRepository.save(newTicket);
+    const newTicket = await Ticket.create({ type, price, quantityAvailable, eventId });
     res.status(201).json(newTicket);
   } catch (error) {
-    console.error('Erro ao criar ingresso:', error);
+    console.error("Erro ao criar ingresso:", error);
     next(error);
   }
 };
@@ -37,11 +27,12 @@ export const createTicket = async (req: Request, res: Response, next: NextFuncti
  */
 export const getTickets = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const ticketRepository = AppDataSource.getRepository(Ticket);
-    const tickets = await ticketRepository.find({ relations: ['event'] });
+    const tickets = await Ticket.findAll({
+      include: [{ model: Event, as: "event" }],
+    });
     res.status(200).json(tickets);
   } catch (error) {
-    console.error('Erro ao buscar ingressos:', error);
+    console.error("Erro ao buscar ingressos:", error);
     next(error);
   }
 };
@@ -52,18 +43,16 @@ export const getTickets = async (_req: Request, res: Response, next: NextFunctio
 export const getTicketById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id } = req.params;
-    const ticketRepository = AppDataSource.getRepository(Ticket);
-    const ticket = await ticketRepository.findOne({
-      where: { id: Number(id) },
-      relations: ['event'],
+    const ticket = await Ticket.findByPk(Number(id), {
+      include: [{ model: Event, as: "event" }],
     });
     if (!ticket) {
-      res.status(404).json({ message: 'Ingresso não encontrado.' });
+      res.status(404).json({ message: "Ingresso não encontrado." });
       return;
     }
     res.status(200).json(ticket);
   } catch (error) {
-    console.error('Erro ao buscar ingresso:', error);
+    console.error("Erro ao buscar ingresso:", error);
     next(error);
   }
 };
@@ -74,19 +63,18 @@ export const getTicketById = async (req: Request, res: Response, next: NextFunct
 export const updateTicket = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id } = req.params;
-    const ticketRepository = AppDataSource.getRepository(Ticket);
-    let ticket = await ticketRepository.findOneBy({ id: Number(id) });
+    const ticket = await Ticket.findByPk(Number(id));
     if (!ticket) {
-      res.status(404).json({ message: 'Ingresso não encontrado.' });
+      res.status(404).json({ message: "Ingresso não encontrado." });
       return;
     }
     ticket.type = req.body.type || ticket.type;
     ticket.price = req.body.price || ticket.price;
     ticket.quantityAvailable = req.body.quantityAvailable || ticket.quantityAvailable;
-    ticket = await ticketRepository.save(ticket);
+    await ticket.save();
     res.status(200).json(ticket);
   } catch (error) {
-    console.error('Erro ao atualizar ingresso:', error);
+    console.error("Erro ao atualizar ingresso:", error);
     next(error);
   }
 };
@@ -97,16 +85,15 @@ export const updateTicket = async (req: Request, res: Response, next: NextFuncti
 export const deleteTicket = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id } = req.params;
-    const ticketRepository = AppDataSource.getRepository(Ticket);
-    const ticket = await ticketRepository.findOneBy({ id: Number(id) });
+    const ticket = await Ticket.findByPk(Number(id));
     if (!ticket) {
-      res.status(404).json({ message: 'Ingresso não encontrado.' });
+      res.status(404).json({ message: "Ingresso não encontrado." });
       return;
     }
-    await ticketRepository.remove(ticket);
-    res.status(200).json({ message: 'Ingresso removido com sucesso.' });
+    await ticket.destroy();
+    res.status(200).json({ message: "Ingresso removido com sucesso." });
   } catch (error) {
-    console.error('Erro ao remover ingresso:', error);
+    console.error("Erro ao remover ingresso:", error);
     next(error);
   }
 };

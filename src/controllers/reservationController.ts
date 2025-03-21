@@ -1,56 +1,45 @@
-import { Request, Response, NextFunction } from 'express';
-import { AppDataSource } from '../config/data-source';
-import { Reservation } from '../models/reservation';
-import { Ticket } from '../models/ticket';
-import { Event } from '../models/event';
-import { User } from '../models/user';
+// src/controllers/reservationController.ts
+import { Request, Response, NextFunction } from "express";
+import sequelize from "../config/database";
+import Reservation from "../models/reservation";
+import Ticket from "../models/ticket";
+import Event from "../models/event";
+import User from "../models/user";
 
 /**
  * Cria uma nova reserva (compra de ingresso).
  * Verifica a disponibilidade e atualiza o estoque em transação.
  */
 export const createReservation = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  const { userId, eventId, ticketId, quantity } = req.body;
   try {
-    const { userId, eventId, ticketId, quantity } = req.body;
-    const ticketRepository = AppDataSource.getRepository(Ticket);
-    const ticket = await ticketRepository.findOne({
-      where: { id: ticketId },
-      relations: ['event'],
-    });
+    const ticket = await Ticket.findByPk(ticketId, { include: [{ model: Event, as: "event" }] });
     if (!ticket) {
-      res.status(404).json({ message: 'Ingresso não encontrado.' });
+      res.status(404).json({ message: "Ingresso não encontrado." });
       return;
     }
     if (ticket.quantityAvailable < quantity) {
-      res.status(400).json({ message: 'Quantidade de ingressos indisponível.' });
+      res.status(400).json({ message: "Quantidade de ingressos indisponível." });
       return;
     }
 
-    await AppDataSource.manager.transaction(async (transactionalEntityManager) => {
+    await sequelize.transaction(async (t) => {
       ticket.quantityAvailable -= quantity;
-      await transactionalEntityManager.save(ticket);
+      await ticket.save({ transaction: t });
 
-      const reservationRepository = transactionalEntityManager.getRepository(Reservation);
-      const userRepository = transactionalEntityManager.getRepository(User);
-      const eventRepository = transactionalEntityManager.getRepository(Event);
+      const user = await User.findByPk(userId, { transaction: t });
+      if (!user) throw new Error("Usuário não encontrado.");
+      const event = await Event.findByPk(eventId, { transaction: t });
+      if (!event) throw new Error("Evento não encontrado.");
 
-      const user = await userRepository.findOneBy({ id: userId });
-      if (!user) throw new Error('Usuário não encontrado.');
-      const event = await eventRepository.findOneBy({ id: eventId });
-      if (!event) throw new Error('Evento não encontrado.');
-
-      // Cria a reserva utilizando as chaves estrangeiras
-      const newReservation = reservationRepository.create({
-        quantity,
-        userId,  
-        eventId, 
-        ticketId,
-      });
-      await reservationRepository.save(newReservation);
+      const newReservation = await Reservation.create(
+        { quantity, userId, eventId, ticketId },
+        { transaction: t }
+      );
       res.status(201).json(newReservation);
     });
   } catch (error) {
-    console.error('Erro ao criar reserva:', error);
+    console.error("Erro ao criar reserva:", error);
     next(error);
   }
 };
@@ -61,19 +50,20 @@ export const createReservation = async (req: Request, res: Response, next: NextF
 export const getReservations = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { userId } = req.query;
-    const reservationRepository = AppDataSource.getRepository(Reservation);
-    let reservations;
+    const queryOptions: any = {
+      include: [
+        { model: User, as: "user" },
+        { model: Event, as: "event" },
+        { model: Ticket, as: "ticket" },
+      ],
+    };
     if (userId) {
-      reservations = await reservationRepository.find({
-        where: { userId: Number(userId) },
-        relations: ['user', 'event', 'ticket'],
-      });
-    } else {
-      reservations = await reservationRepository.find({ relations: ['user', 'event', 'ticket'] });
+      queryOptions.where = { userId: Number(userId) };
     }
+    const reservations = await Reservation.findAll(queryOptions);
     res.status(200).json(reservations);
   } catch (error) {
-    console.error('Erro ao buscar reservas:', error);
+    console.error("Erro ao buscar reservas:", error);
     next(error);
   }
 };
@@ -84,18 +74,20 @@ export const getReservations = async (req: Request, res: Response, next: NextFun
 export const getReservationById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { id } = req.params;
-    const reservationRepository = AppDataSource.getRepository(Reservation);
-    const reservation = await reservationRepository.findOne({
-      where: { id: Number(id) },
-      relations: ['user', 'event', 'ticket'],
+    const reservation = await Reservation.findByPk(Number(id), {
+      include: [
+        { model: User, as: "user" },
+        { model: Event, as: "event" },
+        { model: Ticket, as: "ticket" },
+      ],
     });
     if (!reservation) {
-      res.status(404).json({ message: 'Reserva não encontrada.' });
+      res.status(404).json({ message: "Reserva não encontrada." });
       return;
     }
     res.status(200).json(reservation);
   } catch (error) {
-    console.error('Erro ao buscar reserva:', error);
+    console.error("Erro ao buscar reserva:", error);
     next(error);
   }
 };
@@ -104,28 +96,25 @@ export const getReservationById = async (req: Request, res: Response, next: Next
  * Cancela uma reserva, revertendo a quantidade disponível do ingresso.
  */
 export const cancelReservation = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  const { id } = req.params;
   try {
-    const { id } = req.params;
-    const reservationRepository = AppDataSource.getRepository(Reservation);
-    const reservation = await reservationRepository.findOne({
-      where: { id: Number(id) },
-      relations: ['ticket'],
+    const reservation = await Reservation.findByPk(Number(id), {
+      include: [{ model: Ticket, as: "ticket" }],
     });
     if (!reservation) {
-      res.status(404).json({ message: 'Reserva não encontrada.' });
+      res.status(404).json({ message: "Reserva não encontrada." });
       return;
     }
-
-    await AppDataSource.manager.transaction(async (transactionalEntityManager) => {
+    await sequelize.transaction(async (t) => {
       const ticket = reservation.ticket;
-      if (!ticket) throw new Error('Ticket não encontrado na reserva.');
+      if (!ticket) throw new Error("Ticket não encontrado na reserva.");
       ticket.quantityAvailable += reservation.quantity;
-      await transactionalEntityManager.save(ticket);
-      await transactionalEntityManager.remove(reservation);
+      await ticket.save({ transaction: t });
+      await reservation.destroy({ transaction: t });
     });
-    res.status(200).json({ message: 'Reserva cancelada com sucesso.' });
+    res.status(200).json({ message: "Reserva cancelada com sucesso." });
   } catch (error) {
-    console.error('Erro ao cancelar reserva:', error);
+    console.error("Erro ao cancelar reserva:", error);
     next(error);
   }
 };

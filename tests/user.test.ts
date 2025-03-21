@@ -1,10 +1,19 @@
 // tests/user.test.ts
-
 import request from 'supertest';
-import app from '../src/index';
-
+import app from '../src/app';
+import sequelize from '../src/config/database';
 
 describe('User API', () => {
+  beforeAll(async () => {
+    // Certifique-se de que o banco está sincronizado para os testes
+    await sequelize.sync({ force: true });
+  });
+
+  afterAll(async () => {
+    // Feche a conexão com o banco de dados após os testes
+    await sequelize.close();
+  });
+
   // Suite: POST /users/register
   describe('POST /users/register', () => {
     it('deve criar um novo usuário com dados válidos', async () => {

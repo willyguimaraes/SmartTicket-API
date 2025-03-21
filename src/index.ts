@@ -74,19 +74,20 @@ app.get('/', (req: Request, res: Response) => {
   res.json({ message: 'Smart Ticket API está funcionando!' });
 });
 
-// Sincroniza o banco de dados e inicia o servidor
-sequelize
-  .sync({ force: false })
-  .then(() => {
-    console.log('Banco de dados sincronizado.');
-    app.listen(PORT, () => {
-      console.log(`Servidor rodando na porta ${PORT}`);
-      console.log(`Documentação disponível em: http://localhost:${PORT}/api-docs`);
+// Inicia o servidor apenas se este módulo for o principal
+if (require.main === module) {
+  sequelize
+    .sync({ force: false })
+    .then(() => {
+      console.log('Banco de dados sincronizado.');
+      app.listen(PORT, () => {
+        console.log(`Servidor rodando na porta ${PORT}`);
+        console.log(`Documentação disponível em: http://localhost:${PORT}/api-docs`);
+      });
+    })
+    .catch((error) => {
+      console.error('Erro ao sincronizar banco de dados:', error);
     });
-  })
-  .catch((error) => {
-    console.error('Erro ao sincronizar banco de dados:', error);
-  });
+}
 
 export default app;
-
