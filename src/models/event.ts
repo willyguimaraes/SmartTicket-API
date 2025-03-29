@@ -10,8 +10,8 @@ export interface EventAttributes {
   date: string;
   time: string;
   category: string;
-  organizerId: number;
-  locationId: number;
+  organizerId?: number;
+  locationId?: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -25,8 +25,8 @@ export class Event extends Model<EventAttributes, EventCreationAttributes> imple
   public date!: string;
   public time!: string;
   public category!: string;
-  public organizerId!: number;
-  public locationId!: number;
+  public organizerId?: number;
+  public locationId?: number;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;

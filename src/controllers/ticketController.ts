@@ -9,11 +9,19 @@ import Event from "../models/event";
 export const createTicket = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { type, price, quantityAvailable, eventId } = req.body;
-    const event = await Event.findByPk(eventId);
-    if (!event) {
-      res.status(404).json({ message: "Evento não encontrado." });
+
+    // Verificar se todos os campos obrigatórios estão presentes
+    if (!type || !price || !quantityAvailable || !eventId) {
+      res.status(400).json({ error: "Todos os campos obrigatórios devem ser preenchidos." });
       return;
     }
+
+    const event = await Event.findByPk(eventId);
+    if (!event) {
+      res.status(404).json({ error: "Evento não encontrado." });
+      return;
+    }
+
     const newTicket = await Ticket.create({ type, price, quantityAvailable, eventId });
     res.status(201).json(newTicket);
   } catch (error) {
@@ -47,7 +55,7 @@ export const getTicketById = async (req: Request, res: Response, next: NextFunct
       include: [{ model: Event, as: "event" }],
     });
     if (!ticket) {
-      res.status(404).json({ message: "Ingresso não encontrado." });
+      res.status(404).json({ error: "Ingresso não encontrado." });
       return;
     }
     res.status(200).json(ticket);
@@ -65,7 +73,7 @@ export const updateTicket = async (req: Request, res: Response, next: NextFuncti
     const { id } = req.params;
     const ticket = await Ticket.findByPk(Number(id));
     if (!ticket) {
-      res.status(404).json({ message: "Ingresso não encontrado." });
+      res.status(404).json({ error: "Ingresso não encontrado." });
       return;
     }
     ticket.type = req.body.type || ticket.type;
@@ -87,7 +95,7 @@ export const deleteTicket = async (req: Request, res: Response, next: NextFuncti
     const { id } = req.params;
     const ticket = await Ticket.findByPk(Number(id));
     if (!ticket) {
-      res.status(404).json({ message: "Ingresso não encontrado." });
+      res.status(404).json({ error: "Ingresso não encontrado." });
       return;
     }
     await ticket.destroy();

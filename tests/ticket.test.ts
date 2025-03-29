@@ -1,66 +1,151 @@
-import request from 'supertest';
-import app from '../src/index';
-import sequelize from '../src/config/database';
-import Ticket from '../src/models/ticket';
-import Event from '../src/models/event';
+// tests/ticket.test.ts
 
-beforeAll(async () => {
-  // Sincroniza os modelos com o banco de dados em memória
-  await sequelize.sync({ force: true });
+import request from "supertest";
+import app from "../src/index";
+import Ticket from "../src/models/ticket";
+import Event from "../src/models/event";
+import User, { UserRole } from "../src/models/user";
+import sequelize from "../src/config/database";
+import Location from "../src/models/location";
 
-  // Cria um evento antes de criar ingressos
-  const event = await Event.create({
-    title: 'Evento Teste',
-    description: 'Descrição do evento teste',
-    date: '2025-05-20',
-    time: '18:00',
-    category: 'Tecnologia',
-    organizerId: 1,
-    locationId: 1,
-  });
+describe("Ticket API", () => {
+  let ticket: any;
+  let admin: any;
+  let event: any;
+  let location: any;
 
-  // Cria um ingresso para o evento criado
-  await Ticket.create({
-    eventId: event.id,  // Associa o ingresso ao evento criado
-    type: 'VIP',
-    price: 50.0,
-    quantityAvailable: 100,
-  });
-});
+  beforeAll(async () => {
+    await sequelize.sync({ force: true });
 
-describe('Ticket API', () => {
-  describe('POST /tickets', () => {
-    it('deve criar um novo ingresso com dados válidos', async () => {
-      const event = await Event.create({
-        title: 'Novo Evento',
-        description: 'Descrição do novo evento',
-        date: '2025-06-15',
-        time: '20:00',
-        category: 'Cultura',
-        organizerId: 2,
-        locationId: 2,
-      });
+    // Criar um admin
+    admin = await User.create({
+      name: "Admin Teste",
+      email: "admin@teste.com",
+      password: "admin123",
+      role: UserRole.ADMIN,
+    });
 
-      const res = await request(app)
-        .post('/tickets')
-        .send({
-          type: 'Standard',
-          price: 30.0,
-          quantityAvailable: 200,
-          eventId: event.id,  // Usando o ID do evento recém-criado
-        });
-      expect(res.status).toBe(201);
-      expect(res.body).toHaveProperty('id');
-      expect(res.body.type).toBe('Standard');
-      expect(res.body.price).toBe(30.0);
-      expect(res.body.quantityAvailable).toBe(200);
+    // Criar uma localização
+    location = await Location.create({
+      name: "Localização Teste",
+      address: "Endereço de Teste, 123",
+      capacity: 50,
+    });
+
+    // Criar um evento
+    event = await Event.create({
+      title: "Test Event",
+      description: "This is a test event",
+      date: "2025-03-20",
+      time: "10:00:00",
+      category: "Music",
+      organizerId: admin.id,
+      locationId: location.id,
+    });
+
+    // Criar um ingresso fictício
+    ticket = await Ticket.create({
+      type: "VIP",
+      price: 100,
+      quantityAvailable: 50,
+      eventId: event.id,
     });
   });
 
-  // Restante dos testes como antes...
-});
+  afterAll(async () => {
+    await sequelize.close();
+  });
 
-afterAll(async () => {
-  // Fecha a conexão com o banco de dados após os testes
-  await sequelize.close();
+  // Teste para criação de ingresso
+  test("POST /tickets - deve criar um novo ingresso com dados válidos", async () => {
+    const ticketData = {
+      type: "Regular",
+      price: 50,
+      quantityAvailable: 100,
+      eventId: event.id,
+    };
+
+    const res = await request(app).post("/tickets").send(ticketData);
+
+    expect(res.status).toBe(201); // Verifica se o status da resposta é 201 (Criado)
+    expect(res.body).toHaveProperty("id"); // Verifica se o ID do ingresso foi retornado
+    expect(res.body.type).toBe("Regular"); // Verifica se o tipo do ingresso está correto
+  });
+
+  // Teste para tentar criar ingresso com dados inválidos
+  test("POST /tickets - deve retornar erro para dados inválidos", async () => {
+    const ticketData = {
+      price: 50, // Falta o tipo e quantidade
+    };
+
+    const res = await request(app).post("/tickets").send(ticketData);
+
+    expect(res.status).toBe(400); // Verifica se o status é 400
+    expect(res.body.error).toBe("Todos os campos obrigatórios devem ser preenchidos."); // Verifica se a mensagem de erro está correta
+  });
+
+  // Teste para obter lista de ingressos
+  test("GET /tickets - deve retornar uma lista de ingressos", async () => {
+    const res = await request(app).get("/tickets");
+
+    expect(res.status).toBe(200); // Verifica se o status da resposta é 200
+    expect(Array.isArray(res.body)).toBe(true); // Verifica se a resposta é um array
+  });
+
+  // Teste para obter um ingresso específico
+  test("GET /tickets/:id - deve retornar os detalhes de um ingresso existente", async () => {
+    const res = await request(app).get(`/tickets/${ticket.id}`);
+
+    expect(res.status).toBe(200); // Verifica se o status da resposta é 200
+    expect(res.body).toHaveProperty("id"); // Verifica se o ingresso foi encontrado
+    expect(res.body.type).toBe("VIP"); // Verifica se o tipo do ingresso está correto
+  });
+
+  // Teste para tentar obter um ingresso inexistente
+  test("GET /tickets/:id - deve retornar 404 para ingresso não existente", async () => {
+    const res = await request(app).get("/tickets/9999"); // ID inexistente
+
+    expect(res.status).toBe(404); // Verifica se o status é 404
+    expect(res.body.error).toBe("Ingresso não encontrado."); // Verifica se a mensagem de erro está correta
+  });
+
+  // Teste para atualizar os dados de um ingresso
+  test("PUT /tickets/:id - deve atualizar os dados de um ingresso existente", async () => {
+    const ticketData = { price: 120 }; // Atualizando preço
+
+    const res = await request(app)
+      .put(`/tickets/${ticket.id}`)
+      .send(ticketData);
+
+    expect(res.status).toBe(200); // Verifica se o status é 200
+    expect(res.body.price).toBe(120); // Verifica se o preço foi atualizado
+  });
+
+  // Teste para tentar atualizar um ingresso inexistente
+  test("PUT /tickets/:id - deve retornar 404 ao tentar atualizar ingresso inexistente", async () => {
+    const ticketData = { price: 120 };
+
+    const res = await request(app)
+      .put("/tickets/9999") // ID inexistente
+      .send(ticketData);
+
+    expect(res.status).toBe(404); // Verifica se o status é 404
+    expect(res.body.error).toBe("Ingresso não encontrado."); // Verifica a mensagem de erro
+  });
+
+  // Teste para excluir um ingresso
+  test("DELETE /tickets/:id - deve excluir um ingresso existente", async () => {
+    const res = await request(app).delete(`/tickets/${ticket.id}`);
+
+    expect(res.status).toBe(200); // Verifica se o status é 200
+    expect(res.body.message).toBe("Ingresso removido com sucesso."); // Verifica a mensagem de sucesso
+  });
+
+  // Teste para tentar excluir um ingresso inexistente
+  test("DELETE /tickets/:id - deve retornar 404 ao tentar excluir ingresso inexistente", async () => {
+    const res = await request(app).delete("/tickets/9999"); // ID inexistente
+
+    expect(res.status).toBe(404); // Verifica se o status é 404
+    expect(res.body.error).toBe("Ingresso não encontrado."); // Verifica a mensagem de erro
+  });
 });

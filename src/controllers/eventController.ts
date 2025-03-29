@@ -1,142 +1,79 @@
-// src/controllers/eventController.ts
 import { Request, Response, NextFunction } from "express";
-import { Op } from "sequelize";
-import Event from "../models/event";
-import User from "../models/user";
-import Location from "../models/location";
-import Ticket from "../models/ticket";
+import Event from "../models/event"; 
 
-/**
- * Cria um novo evento.
- */
-export const createEvent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+// Cria um novo evento
+export const createEvent = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { title, description, date, time, category, organizerId, locationId } = req.body;
 
-    const organizer = await User.findByPk(organizerId);
-    if (!organizer) {
-      res.status(404).json({ message: "Organizador não encontrado." });
-      return;
-    }
-    const location = await Location.findByPk(locationId);
-    if (!location) {
-      res.status(404).json({ message: "Local não encontrado." });
-      return;
+    // Verifica se os campos obrigatórios foram enviados
+    if (!title || !description || !date || !time || !category || !organizerId || !locationId) {
+      return res.status(400).json({ error: "Campos obrigatórios faltando." });
     }
 
-    const newEvent = await Event.create({
-      title,
-      description,
-      date,
-      time,
-      category,
-      organizerId,
-      locationId,
-    });
-    res.status(201).json(newEvent);
+    const event = await Event.create({ title, description, date, time, category, organizerId, locationId });
+    return res.status(201).json(event);
   } catch (error) {
-    console.error("Erro ao criar evento:", error);
+    console.log(error);
     next(error);
   }
 };
 
-/**
- * Retorna a lista de eventos com filtros (por data, local e categoria).
- */
-export const getEvents = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+
+// Retorna uma lista de eventos com suporte à paginação
+export const getEvents = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { date, location, category } = req.query;
-    const filters: any = {};
+    // Exemplo simples de paginação: ?page=1&limit=10
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
 
-    if (date) {
-      filters.date = date;
-    }
-    if (category) {
-      filters.category = { [Op.like]: `%${category}%` };
-    }
-    if (location) {
-      // Se a coluna for o ID do local, usamos "locationId"
-      filters.locationId = location;
-    }
-
-    const events = await Event.findAll({
-      where: filters,
-      include: [
-        { model: User, as: "organizer" },
-        { model: Location, as: "location" },
-        { model: Ticket, as: "tickets" },
-      ],
-    });
-    res.status(200).json(events);
+    const events = await Event.findAll({ offset, limit });
+    return res.status(200).json(events);
   } catch (error) {
-    console.error("Erro ao buscar eventos:", error);
     next(error);
   }
 };
 
-/**
- * Retorna um evento pelo ID.
- */
-export const getEventById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+// Retorna os detalhes de um evento específico
+export const getEventById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const event = await Event.findByPk(Number(id), {
-      include: [
-        { model: User, as: "organizer" },
-        { model: Location, as: "location" },
-        { model: Ticket, as: "tickets" },
-      ],
-    });
+    const event = await Event.findByPk(id);
     if (!event) {
-      res.status(404).json({ message: "Evento não encontrado." });
-      return;
+      return res.status(404).json({ error: "Evento não encontrado." });
     }
-    res.status(200).json(event);
+    return res.status(200).json(event);
   } catch (error) {
-    console.error("Erro ao buscar evento:", error);
     next(error);
   }
 };
 
-/**
- * Atualiza os dados de um evento.
- */
-export const updateEvent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+// Atualiza os dados de um evento existente
+export const updateEvent = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const event = await Event.findByPk(Number(id));
-    if (!event) {
-      res.status(404).json({ message: "Evento não encontrado." });
-      return;
+    const [updated] = await Event.update(req.body, { where: { id } });
+    if (updated === 0) {
+      return res.status(404).json({ error: "Evento não encontrado." });
     }
-    event.title = req.body.title || event.title;
-    event.description = req.body.description || event.description;
-    event.date = req.body.date || event.date;
-    event.time = req.body.time || event.time;
-    event.category = req.body.category || event.category;
-    await event.save();
-    res.status(200).json(event);
+    const updatedEvent = await Event.findByPk(id);
+    return res.status(200).json(updatedEvent);
   } catch (error) {
-    console.error("Erro ao atualizar evento:", error);
     next(error);
   }
 };
 
-/**
- * Remove um evento.
- */
-export const deleteEvent = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+// Exclui um evento existente
+export const deleteEvent = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const event = await Event.findByPk(Number(id));
-    if (!event) {
-      res.status(404).json({ message: "Evento não encontrado." });
-      return;
+    const deleted = await Event.destroy({ where: { id } });
+    if (!deleted) {
+      return res.status(404).json({ error: "Evento não encontrado." });
     }
-    await event.destroy();
-    res.status(200).json({ message: "Evento removido com sucesso." });
+    return res.status(200).json({ message: "Evento excluído com sucesso." });
   } catch (error) {
-    console.error("Erro ao remover evento:", error);
     next(error);
   }
 };

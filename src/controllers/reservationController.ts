@@ -1,90 +1,98 @@
-// src/controllers/reservationController.ts
 import { Request, Response, NextFunction } from "express";
-import sequelize from "../config/database";
-import Reservation from "../models/reservation";
+import Reservation from "../models/reservation"; 
 import Ticket from "../models/ticket";
-import Event from "../models/event";
 import User from "../models/user";
 
-/**
- * Cria uma nova reserva (compra de ingresso).
- * Verifica a disponibilidade e atualiza o estoque em transação.
- */
-export const createReservation = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  const { userId, eventId, ticketId, quantity } = req.body;
+export const createReservation = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    const ticket = await Ticket.findByPk(ticketId, { include: [{ model: Event, as: "event" }] });
+    const { quantity, userId, eventId, ticketId } = req.body;
+
+    // Verifica se o ticket existe 
+   
+  
+    // Verifica se há ingressos disponíveis
+    const ticket = await Ticket.findByPk(ticketId);
+    
     if (!ticket) {
-      res.status(404).json({ message: "Ingresso não encontrado." });
-      return;
-    }
+      return res.status(404).json({ error: "Ingressos não encontrados." });
+    };
     if (ticket.quantityAvailable < quantity) {
-      res.status(400).json({ message: "Quantidade de ingressos indisponível." });
-      return;
+      return res.status(400).json({ error: "Quantidade de ingressos indisponível." });
     }
 
-    await sequelize.transaction(async (t) => {
-      ticket.quantityAvailable -= quantity;
-      await ticket.save({ transaction: t });
+    // Verifica se o usuário existe
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ error: "Usuário não encontrado." });
+    }
 
-      const user = await User.findByPk(userId, { transaction: t });
-      if (!user) throw new Error("Usuário não encontrado.");
-      const event = await Event.findByPk(eventId, { transaction: t });
-      if (!event) throw new Error("Evento não encontrado.");
-
-      const newReservation = await Reservation.create(
-        { quantity, userId, eventId, ticketId },
-        { transaction: t }
-      );
-      res.status(201).json(newReservation);
+    // Cria a reserva
+    const reservation = await Reservation.create({
+      quantity,
+      userId,
+      eventId,
+      ticketId,
     });
+
+    // Atualiza a quantidade disponível de ingressos
+    ticket.quantityAvailable -= quantity;
+    await ticket.save();
+
+    res.status(201).json(reservation);
   } catch (error) {
     console.error("Erro ao criar reserva:", error);
     next(error);
   }
 };
 
-/**
- * Lista as reservas. Se for informado um userId na query, filtra pelas reservas do usuário.
- */
-export const getReservations = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getReservations = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    const { userId } = req.query;
-    const queryOptions: any = {
-      include: [
-        { model: User, as: "user" },
-        { model: Event, as: "event" },
-        { model: Ticket, as: "ticket" },
-      ],
-    };
+    // Se for passado userId como query, filtra as reservas desse usuário
+    const userId = req.query.userId as string;
+    let reservations;
+
     if (userId) {
-      queryOptions.where = { userId: Number(userId) };
+      reservations = await Reservation.findAll({
+        where: { userId: Number(userId) },
+        include: ["user", "event", "ticket"],
+      });
+    } else {
+      reservations = await Reservation.findAll({
+        include: ["user", "event", "ticket"],
+      });
     }
-    const reservations = await Reservation.findAll(queryOptions);
+
     res.status(200).json(reservations);
   } catch (error) {
-    console.error("Erro ao buscar reservas:", error);
+    console.error("Erro ao listar reservas:", error);
     next(error);
   }
 };
 
-/**
- * Retorna uma reserva pelo ID.
- */
-export const getReservationById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getReservationById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const { id } = req.params;
-    const reservation = await Reservation.findByPk(Number(id), {
-      include: [
-        { model: User, as: "user" },
-        { model: Event, as: "event" },
-        { model: Ticket, as: "ticket" },
-      ],
+
+    const reservation = await Reservation.findByPk(id, {
+      include: ["user", "event", "ticket"],
     });
+
     if (!reservation) {
-      res.status(404).json({ message: "Reserva não encontrada." });
-      return;
+      return res.status(404).json({ error: "Reserva não encontrada." });
     }
+
     res.status(200).json(reservation);
   } catch (error) {
     console.error("Erro ao buscar reserva:", error);
@@ -92,26 +100,28 @@ export const getReservationById = async (req: Request, res: Response, next: Next
   }
 };
 
-/**
- * Cancela uma reserva, revertendo a quantidade disponível do ingresso.
- */
-export const cancelReservation = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  const { id } = req.params;
+export const cancelReservation = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    const reservation = await Reservation.findByPk(Number(id), {
-      include: [{ model: Ticket, as: "ticket" }],
-    });
+    const { id } = req.params;
+
+    const reservation = await Reservation.findByPk(id);
     if (!reservation) {
-      res.status(404).json({ message: "Reserva não encontrada." });
-      return;
+      return res.status(404).json({ error: "Reserva não encontrada." });
     }
-    await sequelize.transaction(async (t) => {
-      const ticket = reservation.ticket;
-      if (!ticket) throw new Error("Ticket não encontrado na reserva.");
+
+    // Atualiza a quantidade disponível do ticket
+    const ticket = await Ticket.findByPk(reservation.ticketId);
+    if (ticket) {
       ticket.quantityAvailable += reservation.quantity;
-      await ticket.save({ transaction: t });
-      await reservation.destroy({ transaction: t });
-    });
+      await ticket.save();
+    }
+
+    await reservation.destroy();
+
     res.status(200).json({ message: "Reserva cancelada com sucesso." });
   } catch (error) {
     console.error("Erro ao cancelar reserva:", error);

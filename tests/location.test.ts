@@ -1,10 +1,12 @@
 // tests/location.test.ts
 import request from 'supertest';
 import app from '../src/app'; // Supondo que seu app esteja configurado corretamente
+import sequelize from '../src/config/database';
 
 let locationId: number;
 
 beforeAll(async () => {
+  await sequelize.sync({ force: true });
   // Cria um local de teste antes de executar os testes
   const response = await request(app)
     .post('/locations')
@@ -26,6 +28,10 @@ beforeAll(async () => {
   if (!locationId) {
     throw new Error('Falha ao obter o ID do local criado');
   }
+});
+afterAll(async () => {
+    
+  await sequelize.close();
 });
 
 describe('Location API', () => {
