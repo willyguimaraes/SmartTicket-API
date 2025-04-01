@@ -1,80 +1,72 @@
-// src/pages/LocationsManagement.tsx
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-
-interface Location {
-  id: number;
-  name: string;
-  address: string;
-  capacity: number;
-}
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import './locationsManagement.css';
 
 const LocationsManagement: React.FC = () => {
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [name, setName] = useState("");
-  const [address, setAddress] = useState("");
-  const [capacity, setCapacity] = useState<number>(0);
+  const [locationName, setLocationName] = useState('');
+  const [locationAddress, setLocationAddress] = useState('');
+  const [locations, setLocations] = useState([
+    { id: 1, name: 'Local 1', address: 'Endereço 1' },
+    { id: 2, name: 'Local 2', address: 'Endereço 2' },
+    // Adicione mais locais conforme necessário
+  ]);
 
-  const fetchLocations = async () => {
-    try {
-      const response = await axios.get("/api/locations");
-      setLocations(response.data);
-    } catch (error) {
-      console.error("Erro ao buscar locais", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchLocations();
-  }, []);
-
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleAddLocation = (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      await axios.post("/api/locations", { name, address, capacity });
-      fetchLocations();
-      setName("");
-      setAddress("");
-      setCapacity(0);
-    } catch (error) {
-      alert("Erro ao criar local.");
-    }
+    const newLocation = {
+      id: locations.length + 1,
+      name: locationName,
+      address: locationAddress,
+    };
+    setLocations([...locations, newLocation]);
+    setLocationName('');
+    setLocationAddress('');
   };
 
   return (
-    <div className="locations-management">
-      <h2>Gerenciar Locais</h2>
-      <form onSubmit={handleCreate}>
-        <input
-          type="text"
-          placeholder="Nome"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
-        <input
-          type="text"
-          placeholder="Endereço"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          required
-        />
-        <input
-          type="number"
-          placeholder="Capacidade"
-          value={capacity}
-          onChange={(e) => setCapacity(Number(e.target.value))}
-          required
-        />
-        <button type="submit">Adicionar Local</button>
-      </form>
-      <ul>
-        {locations.map((loc) => (
-          <li key={loc.id}>
-            <strong>{loc.name}</strong> - {loc.address} (Capacidade: {loc.capacity})
-          </li>
-        ))}
-      </ul>
+    <div className="locations-management-container">
+      <header className="locations-management-header">
+        <Link to="/dashboard" className="back-button">
+          &#8592;
+        </Link>
+        <div className="header-title">SmartTicket</div>
+        <div className="placeholder"></div>
+      </header>
+      <main className="locations-management-content">
+        <section className="add-location-section">
+          <h2>Cadastrar novo local</h2>
+          <form onSubmit={handleAddLocation} className="add-location-form">
+            <label htmlFor="locationName">Nome do Local</label>
+            <input
+              id="locationName"
+              type="text"
+              value={locationName}
+              onChange={(e) => setLocationName(e.target.value)}
+              required
+            />
+            <label htmlFor="locationAddress">Endereço</label>
+            <input
+              id="locationAddress"
+              type="text"
+              value={locationAddress}
+              onChange={(e) => setLocationAddress(e.target.value)}
+              required
+            />
+            <button type="submit">Adicionar Local</button>
+          </form>
+        </section>
+        <section className="locations-list-section">
+          <h2>Seus locais:</h2>
+          <ul className="locations-list">
+            {locations.map((location) => (
+              <li key={location.id} className="location-item">
+                <span className="location-name">{location.name}</span>
+                <span className="location-address">{location.address}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </main>
     </div>
   );
 };

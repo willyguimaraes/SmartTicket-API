@@ -1,7 +1,8 @@
 // src/pages/RegisterPage.tsx
 import React, { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import "./loginPage.css"; // Reutilizando o mesmo arquivo de estilos
 
 const RegisterPage: React.FC = () => {
   const [name, setName] = useState("");
@@ -13,7 +14,7 @@ const RegisterPage: React.FC = () => {
     e.preventDefault();
     try {
       await axios.post("/api/users/register", { name, email, password });
-      alert("Usuário cadastrado com sucesso!");
+      alert("Cadastro realizado com sucesso!");
       navigate("/login");
     } catch (error) {
       alert("Erro ao cadastrar usuário.");
@@ -21,33 +22,47 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="register-page">
-      <h2>Cadastro</h2>
-      <form onSubmit={handleSubmit}>
-        <input 
+    <div className="login-container">
+      <header className="header">
+        <div className="menu-icon">&#9776;</div>
+        <div className="title">SmartTicket</div>
+        <div className="profile-icon">&#9787;</div>
+      </header>
+      <div className="login-form">
+        <div className="profile-icon-large">&#9787;</div>
+        <h2>CADASTRO</h2>
+        <label htmlFor="name">NOME</label>
+        <input
+          id="name"
           type="text"
-          placeholder="Nome"
+          placeholder="Digite seu nome"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          required 
+          required
         />
-        <input 
+        <label htmlFor="email">EMAIL</label>
+        <input
+          id="email"
           type="email"
-          placeholder="Email"
+          placeholder="Digite seu email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          required 
+          required
         />
-        <input 
+        <label htmlFor="password">SENHA</label>
+        <input
+          id="password"
           type="password"
-          placeholder="Senha"
+          placeholder="Digite sua senha"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          required 
+          required
         />
-        <button type="submit">Cadastrar</button>
-      </form>
-      <p>Já tem conta? <a href="/login">Entrar</a></p>
+        <button type="submit" onClick={handleSubmit}>Cadastrar</button>
+        <p className="register-link">
+          Já tem conta? <Link to="/login">Entrar</Link>
+        </p>
+      </div>
     </div>
   );
 };

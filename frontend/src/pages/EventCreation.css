@@ -1,0 +1,95 @@
+/* src/pages/EventCreation.css */
+
+.event-creation-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: #fff;
+  }
+  
+  /* Cabeçalho com botão de voltar */
+  .event-creation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: rgba(180, 130, 255, 0.2); /* Tom de roxo claro */
+    box-shadow: 0px 4px 10px rgba(180, 130, 255, 0.5); /* Sombreamento suave */
+  }
+  
+  .back-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-around;
+    width: 40px;
+    height: 40px;
+    background-color: #fff;
+    border: 2px solid #8844cc; /* Borda roxa */
+    border-radius: 8px;
+    box-shadow: 0px 4px 8px rgba(136, 68, 204, 0.3); /* Sombra roxa */
+    font-size: 30px;
+    font-weight: bolder;
+    color: #000000;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  
+  .header-title {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+  }
+  
+  .placeholder {
+    width: 40px; /* Espaço para equilibrar o header */
+  }
+  
+  /* Formulário de criação de evento */
+  .event-creation-form {
+    margin: 30px auto;
+    width: 300px;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .event-creation-form h2 {
+    text-align: center;
+    color: #8844cc;
+    margin-bottom: 20px;
+  }
+  
+  .event-creation-form form {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .event-creation-form label {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #555;
+  }
+  
+  .event-creation-form input,
+  .event-creation-form textarea {
+    margin-top: 5px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  .event-creation-form button {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #8844cc;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .event-creation-form button:hover {
+    background-color: #7733bb;
+  }
+  

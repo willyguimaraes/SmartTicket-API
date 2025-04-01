@@ -1,7 +1,8 @@
 // src/pages/LoginPage.tsx
 import React, { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import "./loginPage.css";
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -12,36 +13,46 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     try {
       const response = await axios.post("/api/auth/login", { email, password });
-      // Armazena o token (por exemplo, no localStorage)
       localStorage.setItem("token", response.data.token);
-      // Redireciona para o dashboard
       navigate("/dashboard");
     } catch (error) {
-      alert("Erro de autenticação. Verifique suas credenciais.");
+      alert("Erro ao fazer login. Verifique suas credenciais.");
     }
   };
 
   return (
-    <div className="login-page">
-      <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <input 
+    <div className="login-container">
+      <header className="header">
+        <div className="menu-icon">&#9776;</div>
+        <div className="title">SmartTicket</div>
+        <div className="profile-icon">&#9787;</div>
+      </header>
+      <div className="login-form">
+        <div className="profile-icon-large">&#9787;</div>
+        <h2>LOGIN</h2>
+        <label htmlFor="email">EMAIL</label>
+        <input
+          id="email"
           type="email"
-          placeholder="Email"
+          placeholder="Digite seu email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          required 
+          required
         />
-        <input 
+        <label htmlFor="password">SENHA</label>
+        <input
+          id="password"
           type="password"
-          placeholder="Senha"
+          placeholder="Digite sua senha"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          required 
+          required
         />
-        <button type="submit">Entrar</button>
-      </form>
-      <p>Não tem conta? <a href="/register">Cadastre-se</a></p>
+        <button type="submit" onClick={handleSubmit}>Entrar</button>
+        <p className="register-link">
+          <Link to="/register">Cadastre-se</Link>
+        </p>
+      </div>
     </div>
   );
 };

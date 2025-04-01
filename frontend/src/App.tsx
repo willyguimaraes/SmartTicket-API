@@ -12,7 +12,6 @@ import EventCreation from "./pages/eventCreation";
 import LocationsManagement from "./pages/locationsManagement";
 import ReservationPage from "./pages/reservationPage";
 
-
 const App: React.FC = () => {
   return (
     <Router>
@@ -21,17 +20,15 @@ const App: React.FC = () => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
-        {/* Rota protegida - Dashboard com rotas aninhadas */}
-        <Route path="/dashboard" element={<Dashboard />}>
-          {/* Tela principal do dashboard (poderia ser um resumo ou landing page interna) */}
-          <Route index element={<div>Bem-vindo ao Dashboard!</div>} />
-          <Route path="events" element={<EventsList />} />
-          <Route path="events/:id" element={<EventDetails />} />
-          <Route path="create-event" element={<EventCreation />} />
-          <Route path="locations" element={<LocationsManagement />} />
-          <Route path="reservation" element={<ReservationPage />} />
-          {/* Exemplo: <Route path="my-reservations" element={<MyReservations />} /> */}
-        </Route>
+        {/* Rota para o dashboard (layout com app bar) */}
+        <Route path="/dashboard" element={<Dashboard />} />
+
+        {/* Rotas absolutas para as demais páginas */}
+        <Route path="/events" element={<EventsList />} />
+        <Route path="/events/:id" element={<EventDetails />} />
+        <Route path="/create-event" element={<EventCreation />} />
+        <Route path="/locations" element={<LocationsManagement />} />
+        <Route path="/reservation" element={<ReservationPage />} />
 
         {/* Redireciona a raiz para a página de login */}
         <Route path="/" element={<Navigate to="/login" />} />
