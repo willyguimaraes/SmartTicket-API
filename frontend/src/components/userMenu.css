@@ -1,0 +1,38 @@
+/* src/components/UserMenu.css */
+.user-menu {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .user-icon {
+    font-size: 24px;
+    cursor: pointer;
+    color: #8844cc; /* Tom de roxo */
+  }
+  
+  .user-dropdown {
+    position: absolute;
+    top: 30px;
+    right: 0;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    z-index: 10;
+  }
+  
+  .user-dropdown button {
+    padding: 8px 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #8844cc;
+    font-size: 14px;
+    width: 100%;
+    text-align: left;
+  }
+  
+  .user-dropdown button:hover {
+    background-color: #f2f2f2;
+  }
+  

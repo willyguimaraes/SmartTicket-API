@@ -1,22 +1,24 @@
 // src/pages/RegisterPage.tsx
 import React, { useState } from "react";
-import axios from "axios";
+import axiosInstance from "../axiosInstance";
 import { useNavigate, Link } from "react-router-dom";
-import "./loginPage.css"; // Reutilizando o mesmo arquivo de estilos
+import "./loginPage.css"; // Reutilizando os mesmos estilos do login
 
 const RegisterPage: React.FC = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("client"); // Valor padrão: Usuário (client)
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post("/api/users/register", { name, email, password });
+      await axiosInstance.post("/users/register", { name, email, password, role });
       alert("Cadastro realizado com sucesso!");
       navigate("/login");
     } catch (error) {
+      
       alert("Erro ao cadastrar usuário.");
     }
   };
@@ -58,7 +60,19 @@ const RegisterPage: React.FC = () => {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-        <button type="submit" onClick={handleSubmit}>Cadastrar</button>
+        <label htmlFor="role">PAPEL</label>
+        <select
+          id="role"
+          value={role}
+          onChange={(e) => setRole(e.target.value)}
+          required
+        >
+          <option value="client">Usuário</option>
+          <option value="admin">Administrador</option>
+        </select>
+        <button type="submit" onClick={handleSubmit}>
+          Cadastrar
+        </button>
         <p className="register-link">
           Já tem conta? <Link to="/login">Entrar</Link>
         </p>

@@ -19,6 +19,7 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
       return;
     }
 
+
     // Cria o usuário
     const user = await User.create({ name, email, password, role: role || UserRole.CLIENT });
     res.status(201).json(user);

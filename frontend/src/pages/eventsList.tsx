@@ -1,12 +1,13 @@
 // src/pages/EventsList.tsx
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import axiosInstance from "../axiosInstance";
 import { Link } from "react-router-dom";
+import UserMenu from "../components/userMenu";
+import "./eventsList.css";
 
 interface Event {
   id: number;
   title: string;
-  date: string;
   category: string;
 }
 
@@ -16,7 +17,7 @@ const EventsList: React.FC = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await axios.get("/api/events");
+        const response = await axiosInstance.get("/events");
         setEvents(response.data);
       } catch (error) {
         console.error("Erro ao buscar eventos", error);
@@ -26,23 +27,26 @@ const EventsList: React.FC = () => {
   }, []);
 
   return (
-    <div className="events-list">
+    <div className="events-list-container">
+      <header className="event-details-header">
+              <Link to="/dashboard" className="back-button">&#8592;</Link>
+              <div className="header-title">SmartTicket</div>
+              <div className="placeholder"></div>
+              <UserMenu />
+            </header>
       <h2>Eventos</h2>
-      {events.length === 0 ? (
-        <p>Nenhum evento encontrado.</p>
-      ) : (
-        <ul>
-          {events.map((event) => (
-            <li key={event.id}>
-              <Link to={`/events/${event.id}`}>
-                <h3>{event.title}</h3>
-                <p>{new Date(event.date).toLocaleDateString()}</p>
-                <p>{event.category}</p>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+      <div className="events-list">
+        {events.length === 0 ? (
+          <p>Nenhum evento encontrado.</p>
+        ) : (
+          events.map((event) => (
+            <Link to={`/events/${event.id}`} key={event.id} className="event-card">
+              <div className="event-title">{event.title}</div>
+              <div className="event-category">{event.category}</div>
+            </Link>
+          ))
+        )}
+      </div>
     </div>
   );
 };

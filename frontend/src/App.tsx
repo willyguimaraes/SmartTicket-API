@@ -20,10 +20,10 @@ const App: React.FC = () => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
-        {/* Rota para o dashboard (layout com app bar) */}
+        {/* Dashboard */}
         <Route path="/dashboard" element={<Dashboard />} />
 
-        {/* Rotas absolutas para as demais páginas */}
+        {/* Rotas absolutas */}
         <Route path="/events" element={<EventsList />} />
         <Route path="/events/:id" element={<EventDetails />} />
         <Route path="/create-event" element={<EventCreation />} />

@@ -1,8 +1,9 @@
 // src/pages/EventCreation.tsx
 import React, { useState } from "react";
-import axios from "axios";
+import axiosInstance from "../axiosInstance";
 import { useNavigate, Link } from "react-router-dom";
-import "./EventCreation.css";
+import UserMenu from "../components/userMenu";
+import "./eventCreation.css";
 
 const EventCreation: React.FC = () => {
   const [title, setTitle] = useState("");
@@ -18,7 +19,7 @@ const EventCreation: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post("/api/events", {
+      await axiosInstance.post("/events", {
         title,
         description,
         date,
@@ -39,8 +40,8 @@ const EventCreation: React.FC = () => {
       <header className="event-creation-header">
         <Link to="/dashboard" className="back-button">&#8592;</Link>
         <div className="header-title">SmartTicket</div>
-        {/* Espaço vazio para equilibrar o header */}
         <div className="placeholder"></div>
+        <UserMenu />
       </header>
       <div className="event-creation-form">
         <h2>Criar Evento</h2>

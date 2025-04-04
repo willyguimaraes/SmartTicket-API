@@ -1,22 +1,37 @@
 // src/pages/Dashboard.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import axiosInstance from "../axiosInstance";
+import UserMenu from "../components/userMenu";
 import "./dashboard.css";
 
+interface Reservation {
+  id: number;
+  event: string;
+  quantity: number;
+}
+
 const Dashboard: React.FC = () => {
-  // Estado para controlar a abertura do menu retrátil
   const [menuOpen, setMenuOpen] = useState(false);
+  const [userName, setUserName] = useState("Test User");
+  const [reservations, setReservations] = useState<Reservation[]>([]);
 
-  // Dados simulados (em uma implementação real, esses dados seriam obtidos via API ou contexto)
-  const userName = "Test User";
-  const reservations = [
-    { id: 1, event: "Evento 1", quantity: 2 },
-    { id: 2, event: "Evento 2", quantity: 1 },
-  ];
+  useEffect(() => {
+    const fetchReservations = async () => {
+      try {
+        const response = await axiosInstance.get("/reservations", {
+          params: { userId: 1 },
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
+        setReservations(response.data);
+      } catch (error) {
+        console.error("Erro ao buscar reservas:", error);
+      }
+    };
+    fetchReservations();
+  }, []);
 
-  const toggleMenu = () => {
-    setMenuOpen((prev) => !prev);
-  };
+  const toggleMenu = () => setMenuOpen((prev) => !prev);
 
   return (
     <div className="dashboard-container">
@@ -25,7 +40,8 @@ const Dashboard: React.FC = () => {
           &#9776;
         </button>
         <div className="dashboard-title">SmartTicket</div>
-        <div className="profile-icon">&#9787;</div>
+        {/* Substituindo o ícone de perfil pelo componente UserMenu */}
+        <UserMenu />
       </header>
       
       {menuOpen && (
@@ -49,16 +65,20 @@ const Dashboard: React.FC = () => {
         <h2>Bem vindo, {userName}</h2>
         <h3>Suas reservas:</h3>
         <div className="reservations-list">
-          {reservations.map((reservation) => (
-            <div key={reservation.id} className="reservation-card">
-              <p>
-                <strong>Evento:</strong> {reservation.event}
-              </p>
-              <p>
-                <strong>Quantidade:</strong> {reservation.quantity}
-              </p>
-            </div>
-          ))}
+          {reservations.length === 0 ? (
+            <p>Você ainda não possui reservas.</p>
+          ) : (
+            reservations.map((reservation) => (
+              <div key={reservation.id} className="reservation-card">
+                <p>
+                  <strong>Evento:</strong> {reservation.event}
+                </p>
+                <p>
+                  <strong>Quantidade:</strong> {reservation.quantity}
+                </p>
+              </div>
+            ))
+          )}
         </div>
         <button className="find-events-btn">
           <Link to="/events">Encontrar Eventos</Link>

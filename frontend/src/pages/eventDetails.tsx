@@ -1,7 +1,9 @@
 // src/pages/EventDetails.tsx
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import axiosInstance from "../axiosInstance";
 import { useParams, Link } from "react-router-dom";
+import UserMenu from "../components/userMenu";
+import "./eventDetails.css";
 
 interface Event {
   id: number;
@@ -19,7 +21,7 @@ const EventDetails: React.FC = () => {
   useEffect(() => {
     const fetchEvent = async () => {
       try {
-        const response = await axios.get(`/api/events/${id}`);
+        const response = await axiosInstance.get(`/events/${id}`);
         setEvent(response.data);
       } catch (error) {
         console.error("Erro ao buscar evento", error);
@@ -32,13 +34,22 @@ const EventDetails: React.FC = () => {
 
   return (
     <div className="event-details">
-      <h2>{event.title}</h2>
-      <p>{event.description}</p>
-      <p>
-        Data: {new Date(event.date).toLocaleDateString()} - {event.time}
-      </p>
-      <p>Categoria: {event.category}</p>
-      <Link to="/reservation">Reservar Ingresso</Link>
+      <header className="event-details-header">
+        <Link to="/dashboard" className="back-button">&#8592;</Link>
+        <div className="header-title">SmartTicket</div>
+        <UserMenu />
+      </header>
+      <div className="event-details-content">
+        <h2>{event.title}</h2>
+        <p>{event.description}</p>
+        <p>
+          Data: {new Date(event.date).toLocaleDateString()} - {event.time}
+        </p>
+        <p>Categoria: {event.category}</p>
+        <Link to="/reservation" className="reserve-link">
+          Reservar Ingresso
+        </Link>
+      </div>
     </div>
   );
 };
