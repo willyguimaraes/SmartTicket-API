@@ -7,19 +7,26 @@ import "./loginPage.css";
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("client"); // Valor padrão: Usuário
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await axiosInstance.post("/users/login", { email, password, role });
+      
+      const response = await axiosInstance.post("/users/login", {
+        email,
+        password,
+      });
+
+      console.log("Login response:", response.data);
+
+      // Salva token e userId
       localStorage.setItem("token", response.data.token);
-      localStorage.setItem("userId", response.data.user.id);
+      localStorage.setItem("userId", String(response.data.id));
+      
 
       navigate("/dashboard");
     } catch (error) {
-      
       alert("Erro ao fazer login. Verifique suas credenciais.");
     }
   };
@@ -52,17 +59,9 @@ const LoginPage: React.FC = () => {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-        <label htmlFor="role">PAPEL</label>
-        <select
-          id="role"
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-          required
-        >
-          <option value="client">Usuário</option>
-          <option value="admin">Administrador</option>
-        </select>
-        <button type="submit" onClick={handleSubmit}>Entrar</button>
+        <button type="submit" onClick={handleSubmit}>
+          Entrar
+        </button>
         <p className="register-link">
           <Link to="/register">Cadastre-se</Link>
         </p>

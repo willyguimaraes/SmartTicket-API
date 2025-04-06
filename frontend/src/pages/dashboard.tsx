@@ -7,28 +7,39 @@ import "./dashboard.css";
 
 interface Reservation {
   id: number;
-  event: string;
   quantity: number;
+  event: {
+    id: number;
+    title: string;
+  };
 }
 
 const Dashboard: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [userName, setUserName] = useState("Test User");
+  const [userName, setUserName] = useState("Usuário");
   const [reservations, setReservations] = useState<Reservation[]>([]);
 
   useEffect(() => {
-    const fetchReservations = async () => {
-      try {
-        const response = await axiosInstance.get("/reservations", {
-          params: { userId: 1 },
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        });
-        setReservations(response.data);
-      } catch (error) {
-        console.error("Erro ao buscar reservas:", error);
-      }
-    };
-    fetchReservations();
+    const userId = Number(localStorage.getItem("userId"));
+    const token = localStorage.getItem("token");
+    if (!userId || !token) return;
+
+    // Buscar dados do usuário para exibir o nome
+    axiosInstance
+      .get(`/users/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => setUserName(res.data.name))
+      .catch(console.error);
+
+    // Buscar reservas do usuário
+    axiosInstance
+      .get("/reservations", {
+        params: { userId },
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => setReservations(res.data))
+      .catch(console.error);
   }, []);
 
   const toggleMenu = () => setMenuOpen((prev) => !prev);
@@ -40,10 +51,9 @@ const Dashboard: React.FC = () => {
           &#9776;
         </button>
         <div className="dashboard-title">SmartTicket</div>
-        {/* Substituindo o ícone de perfil pelo componente UserMenu */}
         <UserMenu />
       </header>
-      
+
       {menuOpen && (
         <div className="collapsible-menu">
           <ul>
@@ -60,7 +70,7 @@ const Dashboard: React.FC = () => {
           </ul>
         </div>
       )}
-      
+
       <main className="dashboard-content">
         <h2>Bem vindo, {userName}</h2>
         <h3>Suas reservas:</h3>
@@ -71,7 +81,7 @@ const Dashboard: React.FC = () => {
             reservations.map((reservation) => (
               <div key={reservation.id} className="reservation-card">
                 <p>
-                  <strong>Evento:</strong> {reservation.event}
+                  <strong>Evento:</strong> {reservation.event.title}
                 </p>
                 <p>
                   <strong>Quantidade:</strong> {reservation.quantity}

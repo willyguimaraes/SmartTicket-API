@@ -30,7 +30,11 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
 };
 
 // Autentica usuário e retorna token JWT (exemplo simplificado)
-export const loginUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const loginUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
   try {
     const { email, password } = req.body;
 
@@ -45,16 +49,21 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
       return;
     }
 
-    // Para fins de exemplo, comparamos as senhas diretamente.
-    // Em produção, utilize bcrypt para hash e comparação de senhas.
     if (user.password !== password) {
       res.status(401).json({ error: "Senha incorreta" });
       return;
     }
 
-    // Gera um token JWT (exemplo simplificado; substitua pela lógica real de geração de token)
+    
     const token = "dummy-jwt-token";
-    res.status(200).json({ token });
+    const id = user.id;
+
+
+    // Retornamos token E id do usuário
+    res.status(200).json({
+      "token": token,
+      "id": id,
+    });
   } catch (error) {
     console.error("Erro no login do usuário:", error);
     res.status(500).json({ error: "Erro interno do servidor" });
